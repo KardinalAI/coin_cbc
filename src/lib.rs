@@ -43,14 +43,14 @@ impl Model {
         self.weights.push(Default::default());
         self.is_integer.push(false);
         self.col_lower.push(0.);
-        self.col_upper.push(f64::INFINITY);
+        self.col_upper.push(std::f64::INFINITY);
         col
     }
     pub fn add_row(&mut self) -> Row {
         let row = Row(self.num_rows);
         self.num_rows += 1;
-        self.row_lower.push(f64::NEG_INFINITY);
-        self.row_upper.push(f64::INFINITY);
+        self.row_lower.push(std::f64::NEG_INFINITY);
+        self.row_upper.push(std::f64::INFINITY);
         row
     }
     pub fn set_weight(&mut self, row: Row, col: Col, weight: f64) {
