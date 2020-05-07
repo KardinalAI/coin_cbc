@@ -1,0 +1,10 @@
+[package]
+name = "coin_cbc_sys"
+version = "0.1.0"
+authors = ["Guillaume Pinot <guillaume.pinot@citodi.fr>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+bindgen = "0.53.2"

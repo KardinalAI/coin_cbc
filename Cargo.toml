@@ -1,0 +1,11 @@
+[package]
+name = "coin_cbc"
+version = "0.1.0"
+authors = ["Guillaume Pinot <guillaume.pinot@citodi.fr>"]
+edition = "2018"
+
+[workspace]
+members = ["coin_cbc_sys"]
+
+[dependencies]
+coin_cbc_sys = { version = "0.1", path = "coin_cbc_sys" }
