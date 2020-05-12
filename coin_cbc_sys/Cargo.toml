@@ -1,10 +1,15 @@
 [package]
 name = "coin_cbc_sys"
 version = "0.1.0"
-authors = ["Guillaume Pinot <guillaume.pinot@citodi.fr>"]
+authors = ["Kardinal <guillaume.pinot@kardinal.ai>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Rust bindings to the CoinOR CBC MILP Solveur using the C API."
+documentation = "https://docs.rs/coin_cbc_sys"
+repository = "https://github.com/KardinalAI/coin_cbc"
+keywords = ["MILP", "MIP", "linear programming"]
+categories = ["external-ffi-bindings", "mathematics", "science"]
+license = "MIT "
+readme = "README.md"
 
 [build-dependencies]
 bindgen = "0.53.2"
