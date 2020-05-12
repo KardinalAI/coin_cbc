@@ -3,6 +3,7 @@ pub mod raw;
 pub use raw::Sense;
 
 use std::collections::BTreeMap;
+use std::ffi::CString;
 use std::os::raw::c_int;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -33,9 +34,57 @@ pub struct Model {
     weights: Vec<BTreeMap<Row, f64>>,
     is_integer: Vec<bool>,
     sense: Sense,
+    initial_solution: Option<Vec<f64>>,
+    parameters: BTreeMap<CString, CString>,
 }
 
 impl Model {
+    pub fn num_rows(&self) -> u32 {
+        self.num_rows
+    }
+    pub fn num_cols(&self) -> u32 {
+        self.num_cols
+    }
+    pub fn remove_initial_solution(&mut self) {
+        self.initial_solution = None;
+    }
+    pub fn set_col_initial_solution(&mut self, col: Col, value: f64) {
+        if self.initial_solution.is_none() {
+            self.initial_solution = Some(vec![0.; self.num_cols as usize]);
+        }
+        let sol = self.initial_solution.as_mut().unwrap();
+        sol[col.as_usize()] = value;
+    }
+    pub fn set_initial_solution(&mut self, solution: &Solution) {
+        for col in self.cols() {
+            self.set_col_initial_solution(col, solution.col(col));
+        }
+    }
+    pub fn set_parameter(&mut self, key: &str, value: &str) {
+        let key = match CString::new(key) {
+            Ok(s) => s,
+            Err(_) => return,
+        };
+        let value = match CString::new(value) {
+            Ok(s) => s,
+            Err(_) => return,
+        };
+        self.parameters.insert(key, value);
+    }
+    pub fn set_parameters(
+        &mut self,
+        iter: impl IntoIterator<Item = (impl AsRef<str>, impl AsRef<str>)>,
+    ) {
+        for (k, v) in iter.into_iter() {
+            self.set_parameter(k.as_ref(), v.as_ref());
+        }
+    }
+    pub fn rows(&self) -> impl Iterator<Item = Row> {
+        (0..self.num_rows).map(Row)
+    }
+    pub fn cols(&self) -> impl Iterator<Item = Col> {
+        (0..self.num_cols).map(Col)
+    }
     pub fn add_col(&mut self) -> Col {
         let col = Col(self.num_cols);
         self.num_cols += 1;
@@ -44,6 +93,17 @@ impl Model {
         self.is_integer.push(false);
         self.col_lower.push(0.);
         self.col_upper.push(std::f64::INFINITY);
+        self.initial_solution.as_mut().map(|sol| sol.push(0.));
+        col
+    }
+    pub fn add_integer(&mut self) -> Col {
+        let col = self.add_col();
+        self.set_integer(col);
+        col
+    }
+    pub fn add_binary(&mut self) -> Col {
+        let col = self.add_col();
+        self.set_binary(col);
         col
     }
     pub fn add_row(&mut self) -> Row {
@@ -86,6 +146,10 @@ impl Model {
     pub fn set_row_lower(&mut self, row: Row, value: f64) {
         self.row_lower[row.as_usize()] = value;
     }
+    pub fn set_row_equal(&mut self, row: Row, value: f64) {
+        self.set_row_upper(row, value);
+        self.set_row_lower(row, value);
+    }
     pub fn set_obj_sense(&mut self, sense: Sense) {
         self.sense = sense;
     }
@@ -101,9 +165,6 @@ impl Model {
             }
             start.push(index.len() as c_int);
         }
-        dbg!(&start);
-        dbg!(&index);
-        dbg!(&value);
         let mut raw = raw::Model::new();
         raw.load_problem(
             self.num_cols as usize,
@@ -125,6 +186,12 @@ impl Model {
             }
         }
         raw.set_obj_sense(self.sense);
+        for (k, v) in &self.parameters {
+            raw.set_parameter(k, v);
+        }
+        if let Some(sol) = &self.initial_solution {
+            raw.set_initial_solution(sol);
+        }
         raw
     }
     pub fn solve(&self) -> Solution {
@@ -156,18 +223,16 @@ mod test {
     #[test]
     fn knapsack() {
         let mut m = Model::default();
+        m.set_parameter("log", "0");
         let row = m.add_row();
         m.set_row_upper(row, 10.);
         let cols = vec![
-            m.add_col(),
-            m.add_col(),
-            m.add_col(),
-            m.add_col(),
-            m.add_col(),
+            m.add_binary(),
+            m.add_binary(),
+            m.add_binary(),
+            m.add_binary(),
+            m.add_binary(),
         ];
-        for &c in &cols {
-            m.set_binary(c);
-        }
         m.set_weight(row, cols[0], 2.);
         m.set_weight(row, cols[1], 8.);
         m.set_weight(row, cols[2], 4.);
