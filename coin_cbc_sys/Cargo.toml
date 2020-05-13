@@ -10,6 +10,3 @@ keywords = ["MILP", "MIP", "linear programming"]
 categories = ["external-ffi-bindings", "mathematics", "science"]
 license = "MIT "
 readme = "README.md"
-
-[build-dependencies]
-bindgen = "0.53.2"

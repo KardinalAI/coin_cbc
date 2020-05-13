@@ -1,6 +1,118 @@
+//! Raw coin cbc bindings for CBC 2.9. For documentation see official
+//! documentation.
 #![allow(non_camel_case_types)]
 
-include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+use std::os::raw::{c_char, c_int};
+
+#[repr(C)]
+pub struct Cbc_Model {
+    _private: [u8; 0],
+}
+pub type CoinBigIndex = c_int;
+pub type cbc_callback = Option<
+    unsafe extern "C" fn(
+        model: *mut Cbc_Model,
+        msgno: c_int,
+        ndouble: c_int,
+        dvec: *const f64,
+        nint: c_int,
+        ivec: *const c_int,
+        nchar: c_int,
+        cvec: *mut *mut c_char,
+    ),
+>;
+
+#[link(name = "CbcSolver")]
+extern "C" {
+    pub fn Cbc_newModel() -> *mut Cbc_Model;
+    pub fn Cbc_deleteModel(model: *mut Cbc_Model);
+    pub fn Cbc_getVersion() -> *const c_char;
+    pub fn Cbc_loadProblem(
+        model: *mut Cbc_Model,
+        numcols: c_int,
+        numrows: c_int,
+        start: *const CoinBigIndex,
+        index: *const c_int,
+        value: *const f64,
+        collb: *const f64,
+        colub: *const f64,
+        obj: *const f64,
+        rowlb: *const f64,
+        rowub: *const f64,
+    );
+    pub fn Cbc_readMps(model: *mut Cbc_Model, filename: *const c_char) -> c_int;
+    pub fn Cbc_writeMps(model: *mut Cbc_Model, filename: *const c_char);
+    pub fn Cbc_setInitialSolution(model: *mut Cbc_Model, sol: *const f64);
+    pub fn Cbc_problemName(model: *mut Cbc_Model, maxNumberCharacters: c_int, array: *mut c_char);
+    pub fn Cbc_setProblemName(model: *mut Cbc_Model, array: *const c_char) -> c_int;
+    pub fn Cbc_getNumElements(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_getVectorStarts(model: *mut Cbc_Model) -> *const CoinBigIndex;
+    pub fn Cbc_getIndices(model: *mut Cbc_Model) -> *const c_int;
+    pub fn Cbc_getElements(model: *mut Cbc_Model) -> *const f64;
+    pub fn Cbc_maxNameLength(model: *mut Cbc_Model) -> usize;
+    pub fn Cbc_getRowName(model: *mut Cbc_Model, iRow: c_int, name: *mut c_char, maxLength: usize);
+    pub fn Cbc_getColName(
+        model: *mut Cbc_Model,
+        iColumn: c_int,
+        name: *mut c_char,
+        maxLength: usize,
+    );
+    pub fn Cbc_setColName(model: *mut Cbc_Model, iColumn: c_int, name: *const c_char);
+    pub fn Cbc_setRowName(model: *mut Cbc_Model, iRow: c_int, name: *const c_char);
+    pub fn Cbc_getNumRows(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_getNumCols(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_setObjSense(model: *mut Cbc_Model, sense: f64);
+    pub fn Cbc_getObjSense(model: *mut Cbc_Model) -> f64;
+    pub fn Cbc_getRowLower(model: *mut Cbc_Model) -> *const f64;
+    pub fn Cbc_setRowLower(model: *mut Cbc_Model, index: c_int, value: f64);
+    pub fn Cbc_getRowUpper(model: *mut Cbc_Model) -> *const f64;
+    pub fn Cbc_setRowUpper(model: *mut Cbc_Model, index: c_int, value: f64);
+    pub fn Cbc_getObjCoefficients(model: *mut Cbc_Model) -> *const f64;
+    pub fn Cbc_setObjCoeff(model: *mut Cbc_Model, index: c_int, value: f64);
+    pub fn Cbc_getColLower(model: *mut Cbc_Model) -> *const f64;
+    pub fn Cbc_setColLower(model: *mut Cbc_Model, index: c_int, value: f64);
+    pub fn Cbc_getColUpper(model: *mut Cbc_Model) -> *const f64;
+    pub fn Cbc_setColUpper(model: *mut Cbc_Model, index: c_int, value: f64);
+    pub fn Cbc_isInteger(model: *mut Cbc_Model, i: c_int) -> c_int;
+    pub fn Cbc_setContinuous(model: *mut Cbc_Model, iColumn: c_int);
+    pub fn Cbc_setInteger(model: *mut Cbc_Model, iColumn: c_int);
+    pub fn Cbc_addSOS(
+        model: *mut Cbc_Model,
+        numRows: c_int,
+        rowStarts: *const c_int,
+        colIndices: *const c_int,
+        weights: *const f64,
+        type_: c_int,
+    );
+    pub fn Cbc_printModel(model: *mut Cbc_Model, argPrefix: *const c_char);
+    pub fn Cbc_clone(model: *mut Cbc_Model) -> *mut Cbc_Model;
+    pub fn Cbc_setParameter(model: *mut Cbc_Model, name: *const c_char, value: *const c_char);
+    pub fn Cbc_registerCallBack(model: *mut Cbc_Model, userCallBack: cbc_callback);
+    pub fn Cbc_clearCallBack(model: *mut Cbc_Model);
+    pub fn Cbc_solve(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_sumPrimalInfeasibilities(model: *mut Cbc_Model) -> f64;
+    pub fn Cbc_numberPrimalInfeasibilities(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_checkSolution(model: *mut Cbc_Model);
+    pub fn Cbc_getIterationCount(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isAbandoned(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isProvenOptimal(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isProvenInfeasible(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isContinuousUnbounded(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isNodeLimitReached(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isSecondsLimitReached(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isSolutionLimitReached(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isInitialSolveAbandoned(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isInitialSolveProvenOptimal(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_isInitialSolveProvenPrimalInfeasible(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_getRowActivity(model: *mut Cbc_Model) -> *const f64;
+    pub fn Cbc_getColSolution(model: *mut Cbc_Model) -> *const f64;
+    pub fn Cbc_getObjValue(model: *mut Cbc_Model) -> f64;
+    pub fn Cbc_getBestPossibleObjValue(model: *mut Cbc_Model) -> f64;
+    pub fn Cbc_getNodeCount(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_printSolution(model: *mut Cbc_Model);
+    pub fn Cbc_status(model: *mut Cbc_Model) -> c_int;
+    pub fn Cbc_secondaryStatus(model: *mut Cbc_Model) -> c_int;
+}
 
 #[cfg(test)]
 mod tests {
