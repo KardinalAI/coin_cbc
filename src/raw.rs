@@ -5,7 +5,7 @@
 //!  - snake case naming
 //!  - slices as inputs
 //!  - rust naming convension (in particular, getter do not begin with `get`)
-//!  - assert are executed on slice length
+//!  - assert are used to validate data
 //!  - use rust types when cheap (as usize for array length)
 
 use coin_cbc_sys::*;
@@ -13,10 +13,15 @@ use std::convert::TryInto;
 use std::ffi::CStr;
 use std::os::raw::c_int;
 
+/// Sense of optimization.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Sense {
+    /// Objective must be minimized.
     Minimize,
+    /// Objective must be maximized.
     Maximize,
+    /// The objective is ignored, only searching for a feasible
+    /// solution.
     Ignore,
 }
 impl Default for Sense {
@@ -25,15 +30,22 @@ impl Default for Sense {
     }
 }
 
+/// Status of the model.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Status {
+    /// The solving procedure was not launched.
     Unlaunched = -1,
+    /// The solving procedure finished.
     Finished = 0,
+    /// The solving procedure was stopped before optimality was proved.
     Stopped = 1,
+    /// The solving procedure was abandoned.
     Abandoned = 2,
+    /// The solving procedure is inside a user event.
     UserEvent = 5,
 }
 
+#[allow(missing_docs)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum SecondaryStatus {
     Unlaunched = -1,
@@ -48,10 +60,15 @@ pub enum SecondaryStatus {
     StoppedOnIterationLimit = 8,
 }
 
+/// A CBC MILP model.
+///
+/// Their methods are a direct translation from the C API. For
+/// documentation, see the official API documentation.
 pub struct Model {
     m: *mut Cbc_Model,
 }
 
+#[allow(missing_docs)]
 impl Model {
     pub fn new() -> Self {
         Self {
@@ -223,7 +240,7 @@ impl Model {
     pub fn set_parameter(&mut self, name: &CStr, value: &CStr) {
         unsafe { Cbc_setParameter(self.m, name.as_ptr(), value.as_ptr()) };
     }
-    // TODO: call backs
+    // TODO: callback
     pub fn solve(&mut self) -> c_int {
         unsafe { Cbc_solve(self.m) }
     }
