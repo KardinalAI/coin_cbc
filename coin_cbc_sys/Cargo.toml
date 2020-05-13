@@ -6,6 +6,6 @@ edition = "2018"
 description = "Rust bindings to the CoinOR CBC MILP Solveur using the C API."
 documentation = "https://docs.rs/coin_cbc_sys"
 repository = "https://github.com/KardinalAI/coin_cbc"
-keywords = ["MILP", "MIP", "linear programming"]
+keywords = ["MILP", "MIP", "linear-programming"]
 categories = ["external-ffi-bindings", "mathematics", "science"]
 license = "MIT "
