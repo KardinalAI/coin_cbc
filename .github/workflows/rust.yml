@@ -39,4 +39,5 @@ jobs:
           cargo build --verbose --all
     - name: Run tests
       run: |
+          echo "C:\Cbc\lib" >> $GITHUB_PATH
           cargo test --verbose --all
