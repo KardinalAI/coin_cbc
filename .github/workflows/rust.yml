@@ -19,3 +19,27 @@ jobs:
       run: cargo build --verbose --all
     - name: Run tests
       run: cargo test --verbose --all
+  
+  windows:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Prepare dependencies
+      shell: powershell
+        run: |
+          Install-Module 7Zip4PowerShell -Force -Verbose
+          mkdir C:\Cbc
+          Invoke-WebRequest "https://bintray.com/coin-or/download/download_file?file_path=Cbc-2.9-win32-msvc14.zip" -OutFile "C:\Cbc\Cbc-2.9.zip"
+          7z x C:\Cbc\Cbc-2.9.zip -o"C:\Cbc\"
+    - name: Build
+      run: |
+          SET PATH=%PATH%;C:\Cbc\bin
+          SET LIB=%LIB%;C:\Cbc\lib
+          cargo build --verbose --all
+    - name: Run tests
+      run: |
+          SET PATH=%PATH%;C:\Cbc\bin
+          SET LIB=%LIB%;C:\Cbc\lib
+          cargo test --verbose --all
