@@ -28,7 +28,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Prepare dependencies
       shell: powershell
-        run: |
+      run: |
           Install-Module 7Zip4PowerShell -Force -Verbose
           mkdir C:\Cbc
           Invoke-WebRequest "https://bintray.com/coin-or/download/download_file?file_path=Cbc-2.9-win32-msvc14.zip" -OutFile "C:\Cbc\Cbc-2.9.zip"
