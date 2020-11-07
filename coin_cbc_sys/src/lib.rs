@@ -22,7 +22,7 @@ pub type cbc_callback = Option<
     ),
 >;
 
-extern "C" {
+extern "system" {
     pub fn Cbc_newModel() -> *mut Cbc_Model;
     pub fn Cbc_deleteModel(model: *mut Cbc_Model);
     pub fn Cbc_getVersion() -> *const c_char;
