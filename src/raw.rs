@@ -91,11 +91,11 @@ impl Model {
         rowlb: Option<&[f64]>,
         rowub: Option<&[f64]>,
     ) {
-        assert_eq!(start.len(), numcols + 1);
-        assert_eq!(index.len(), start[numcols] as usize);
+        assert_eq!(start.len(), numcols.checked_add(1).unwrap());
+        assert_eq!(index.len(), start[numcols].try_into().unwrap());
         assert!(start[0] >= 0);
         assert!(start.windows(2).all(|w| w[0] <= w[1]
-            && index[w[0] as usize..w[1] as usize]
+            && index[w[0].try_into().unwrap()..w[1].try_into().unwrap()]
                 .windows(2)
                 .all(|w| w[0] <= w[1])));
 
@@ -140,10 +140,15 @@ impl Model {
     }
     // TODO: setProblemName
     pub fn num_elements(&self) -> usize {
-        unsafe { Cbc_getNumElements(self.m) as usize }
+        unsafe { Cbc_getNumElements(self.m).try_into().unwrap() }
     }
     pub fn vector_starts(&self) -> &[c_int] {
-        unsafe { std::slice::from_raw_parts(Cbc_getVectorStarts(self.m), self.num_cols() + 1) }
+        unsafe {
+            std::slice::from_raw_parts(
+                Cbc_getVectorStarts(self.m),
+                self.num_cols().checked_add(1).unwrap(),
+            )
+        }
     }
     pub fn indices(&self) -> &[c_int] {
         let size = (*self.vector_starts().last().unwrap()).try_into().unwrap();
@@ -154,14 +159,14 @@ impl Model {
         unsafe { std::slice::from_raw_parts(Cbc_getElements(self.m), size) }
     }
     pub fn max_name_length(&self) -> usize {
-        unsafe { Cbc_maxNameLength(self.m) as usize }
+        unsafe { Cbc_maxNameLength(self.m).try_into().unwrap() }
     }
     // TODO: name management
     pub fn num_rows(&self) -> usize {
-        unsafe { Cbc_getNumRows(self.m) as usize }
+        unsafe { Cbc_getNumRows(self.m).try_into().unwrap() }
     }
     pub fn num_cols(&self) -> usize {
-        unsafe { Cbc_getNumCols(self.m) as usize }
+        unsafe { Cbc_getNumCols(self.m).try_into().unwrap() }
     }
     pub fn set_obj_sense(&mut self, sense: Sense) {
         let sense = match sense {
@@ -187,7 +192,7 @@ impl Model {
     }
     pub fn set_row_lower(&mut self, i: usize, value: f64) {
         assert!(i < self.num_rows());
-        unsafe { Cbc_setRowLower(self.m, i as c_int, value) }
+        unsafe { Cbc_setRowLower(self.m, i.try_into().unwrap(), value) }
     }
     pub fn row_upper(&self) -> &[f64] {
         let size = self.num_rows();
@@ -195,7 +200,7 @@ impl Model {
     }
     pub fn set_row_upper(&mut self, i: usize, value: f64) {
         assert!(i < self.num_rows());
-        unsafe { Cbc_setRowUpper(self.m, i as c_int, value) }
+        unsafe { Cbc_setRowUpper(self.m, i.try_into().unwrap(), value) }
     }
     pub fn obj_coefficients(&self) -> &[f64] {
         let size = self.num_cols();
@@ -203,7 +208,7 @@ impl Model {
     }
     pub fn set_obj_coeff(&mut self, i: usize, value: f64) {
         assert!(i < self.num_cols());
-        unsafe { Cbc_setObjCoeff(self.m, i as c_int, value) }
+        unsafe { Cbc_setObjCoeff(self.m, i.try_into().unwrap(), value) }
     }
     pub fn col_lower(&self) -> &[f64] {
         let size = self.num_cols();
@@ -211,7 +216,7 @@ impl Model {
     }
     pub fn set_col_lower(&mut self, i: usize, value: f64) {
         assert!(i < self.num_cols());
-        unsafe { Cbc_setColLower(self.m, i as c_int, value) }
+        unsafe { Cbc_setColLower(self.m, i.try_into().unwrap(), value) }
     }
     pub fn col_upper(&self) -> &[f64] {
         let size = self.num_cols();
@@ -219,7 +224,7 @@ impl Model {
     }
     pub fn set_col_upper(&mut self, i: usize, value: f64) {
         assert!(i < self.num_cols());
-        unsafe { Cbc_setColUpper(self.m, i as c_int, value) }
+        unsafe { Cbc_setColUpper(self.m, i.try_into().unwrap(), value) }
     }
     pub fn is_integer(&self, i: usize) -> bool {
         assert!(i < self.num_cols());
@@ -395,5 +400,19 @@ mod test {
         assert!((sol[2] - 0.).abs() < 1e-6);
         assert!((sol[3] - 1.).abs() < 1e-6);
         assert!((sol[4] - 1.).abs() < 1e-6);
+    }
+
+    #[test]
+    fn big_row() {
+        let mut m = Model::new();
+        let numcols = 0;
+        let numrows = 1_000_000;
+        let start = [1];
+        let value = [0.];
+        m.load_problem(
+            numcols, numrows, &start, &start, &value, None, None, None, None, None,
+        );
+        m.set_initial_solution(&[]);
+        assert_eq!(&value, &[0.])
     }
 }

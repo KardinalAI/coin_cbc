@@ -75,6 +75,10 @@ impl Model {
         let sol = self.initial_solution.as_mut().unwrap();
         sol[col.as_usize()] = value;
     }
+    /// Gets the column value to the initial solution.
+    pub fn get_col_initial_solution(&self, col: Col) -> Option<f64> {
+        self.initial_solution.as_ref().map(|s| s[col.as_usize()])
+    }
     /// Sets the initial solution from a `Solution`.
     pub fn set_initial_solution(&mut self, solution: &Solution) {
         for col in self.cols() {
