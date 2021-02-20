@@ -9,16 +9,20 @@
 #![deny(missing_docs)]
 
 pub mod raw;
+mod sos_constraints;
 
 pub use raw::Sense;
 
 use std::collections::BTreeMap;
 use std::ffi::CString;
 use std::os::raw::c_int;
+use crate::sos_constraints::SOSConstraints;
+use crate::raw::SOSConstraintType;
 
 /// A column identifier.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Col(u32);
+
 impl Col {
     fn as_usize(self) -> usize {
         self.0 as usize
@@ -49,6 +53,8 @@ pub struct Model {
     sense: Sense,
     initial_solution: Option<Vec<f64>>,
     parameters: BTreeMap<CString, CString>,
+    sos1: SOSConstraints,
+    sos2: SOSConstraints,
 }
 
 impl Model {
@@ -211,6 +217,20 @@ impl Model {
         self.set_row_upper(row, value);
         self.set_row_lower(row, value);
     }
+
+
+    /// Add a special ordered set constraint, preventing all but one variable
+    /// in a set to be non-zero at the same time.
+    pub fn add_sos1<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
+        self.sos1.add_constraint_with_weights(columns_and_weights.into_iter())
+    }
+
+    /// Add a special ordered set constraint, preventing all but two consecutive variables
+    /// in a set to be non-zero at the same time.
+    pub fn add_sos2<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
+        self.sos2.add_constraint_with_weights(columns_and_weights.into_iter())
+    }
+
     /// Sets the objective sense.
     pub fn set_obj_sense(&mut self, sense: Sense) {
         self.sense = sense;
@@ -255,6 +275,8 @@ impl Model {
         if let Some(sol) = &self.initial_solution {
             raw.set_initial_solution(sol);
         }
+        self.sos1.add_to_raw(&mut raw, SOSConstraintType::Type1);
+        self.sos2.add_to_raw(&mut raw, SOSConstraintType::Type2);
         raw
     }
     /// Solves the model. Returns the solution.
@@ -324,5 +346,25 @@ mod test {
         assert_eq!(0., sol.col(cols[2]));
         assert_eq!(1., sol.col(cols[3]));
         assert_eq!(1., sol.col(cols[4]));
+    }
+
+    #[test]
+    fn with_sos() {
+        let mut m = Model::default();
+        let row = m.add_row();
+        m.set_row_upper(row, 10.);
+        let cols = vec![
+            m.add_binary(),
+            m.add_binary(),
+        ];
+        m.set_obj_coeff(cols[0], 5.);
+        m.set_obj_coeff(cols[1], 3.);
+        m.set_obj_sense(Sense::Maximize);
+        m.add_sos1(vec![(cols[0], 1.), (cols[1], 2.)]);
+        let sol = m.solve();
+        assert_eq!(raw::Status::Finished, sol.raw().status());
+        assert_eq!(5., sol.raw().obj_value());
+        assert_eq!(1., sol.col(cols[0]));
+        assert_eq!(0., sol.col(cols[1]));
     }
 }
