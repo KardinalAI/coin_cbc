@@ -254,8 +254,8 @@ impl Model {
     /// plus one last element that indicates the size of col_indices array.
     /// col_indices: The index of each variable to include in the constraints.
     /// You create this array by concatenating the indices of the columns in each constraint.
-    pub fn add_sos(&self, num_rows: usize, row_starts: &[c_int], col_indices: &[c_int], weights: &[f64], sos_type: SOSConstraintType) {
-        assert_eq!(num_rows.checked_add(1), Some(row_starts.len()));
+    pub fn add_sos(&self, row_starts: &[c_int], col_indices: &[c_int], weights: &[f64], sos_type: SOSConstraintType) {
+        let num_rows = row_starts.len().checked_sub(1).unwrap();
         let last_idx: usize = row_starts[num_rows].try_into().unwrap();
         assert_eq!(last_idx, col_indices.len());
         for starts in row_starts.windows(2) {
@@ -470,7 +470,7 @@ mod test {
             None,
         );
         // Add a constraint that either x or y must be 0
-        m.add_sos(1, &[0, 2], &[0, 1], &[5., 3.], SOSConstraintType::Type1);
+        m.add_sos(&[0, 2], &[0, 1], &[5., 3.], SOSConstraintType::Type1);
         m.set_integer(0);
         m.set_integer(1);
         m.solve();
@@ -496,7 +496,6 @@ mod test {
         );
         // Add a constraint that either x or y must be 0
         m.add_sos(
-            2, // add two constraints
             &[
                 0, 2, // The first constraint is on columns col_indices[0..2]
                 4 // The second is on columns col_indices[2..4]

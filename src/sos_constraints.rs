@@ -9,7 +9,6 @@ pub(crate) struct SOSConstraints {
     // It is important that these fields remain private in order to ensure
     // memory safety of the API. They can only be mutated together through the public
     // methods of this struct.
-    num_rows: usize,
     row_starts: Vec<c_int>,
     col_indices: Vec<c_int>,
     weights: Vec<f64>,
@@ -21,7 +20,6 @@ impl SOSConstraints {
         &mut self,
         columns_and_weights: I,
     ) {
-        self.num_rows += 1;
         let (len, _) = columns_and_weights.size_hint();
         self.col_indices.reserve(len);
         for (col, weight) in columns_and_weights {
@@ -31,11 +29,11 @@ impl SOSConstraints {
         self.row_starts.push(self.col_indices.len().try_into().unwrap());
     }
     pub fn is_empty(&self) -> bool {
-        self.num_rows == 0
+        self.row_starts.len() <= 1
     }
     pub fn add_to_raw(&self, raw: &mut crate::raw::Model, sos_type: SOSConstraintType) {
         if !self.is_empty() {
-            raw.add_sos(self.num_rows, &self.row_starts, &self.col_indices, &self.weights, sos_type);
+            raw.add_sos(&self.row_starts, &self.col_indices, &self.weights, sos_type);
         }
     }
 }
@@ -43,7 +41,6 @@ impl SOSConstraints {
 impl Default for SOSConstraints {
     fn default() -> Self {
         SOSConstraints {
-            num_rows: 0,
             row_starts: vec![0],
             col_indices: vec![],
             weights: vec![],
