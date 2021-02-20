@@ -220,13 +220,13 @@ impl Model {
 
 
     /// Add a special ordered set constraint, preventing all but one variable
-    /// in a set to be non-zero at the same time.
+    /// in a set from being non-zero at the same time.
     pub fn add_sos1<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
         self.sos1.add_constraint_with_weights(columns_and_weights.into_iter())
     }
 
     /// Add a special ordered set constraint, preventing all but two consecutive variables
-    /// in a set to be non-zero at the same time.
+    /// in a set from being non-zero at the same time.
     pub fn add_sos2<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
         self.sos2.add_constraint_with_weights(columns_and_weights.into_iter())
     }
@@ -357,12 +357,15 @@ mod test {
             m.add_binary(),
             m.add_binary(),
         ];
+        // Maximise 5 x + 3 y
         m.set_obj_coeff(cols[0], 5.);
         m.set_obj_coeff(cols[1], 3.);
         m.set_obj_sense(Sense::Maximize);
+        // Add a constraint that either x or y must be null
         m.add_sos1(vec![(cols[0], 1.), (cols[1], 2.)]);
         let sol = m.solve();
         assert_eq!(raw::Status::Finished, sol.raw().status());
+        // The solution is 5 x + 3 y = 5 with x = 1 and y = 0
         assert_eq!(5., sol.raw().obj_value());
         assert_eq!(1., sol.col(cols[0]));
         assert_eq!(0., sol.col(cols[1]));
