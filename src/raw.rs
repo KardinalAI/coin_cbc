@@ -456,23 +456,66 @@ mod test {
     #[test]
     fn sos_one_constraint() {
         let mut m = Model::new();
-        assert!(Model::version().len() > 4);
+        // Minimize 5x + 3y with -1 <= x <= 1 and -1 <= y <= 1
         m.load_problem(
             2,
             0,
-            &vec![0, 1, 2],
-            &vec![0, 0],
-            &vec![2., 8.],
+            &vec![0, 0, 0],
+            &vec![],
+            &vec![],
             Some(&vec![-1., -1.]),
             Some(&vec![1., 1.]),
             Some(&vec![5., 3.]),
             None,
             None,
         );
+        // Add a constraint that either x or y must be 0
         m.add_sos(1, &[0, 2], &[0, 1], &[5., 3.], SOSConstraintType::Type1);
         m.set_integer(0);
         m.set_integer(1);
         m.solve();
+        // The solution is x = -1 and y = 0
         assert_eq!(&[-1., 0.], m.col_solution());
+    }
+
+    #[test]
+    fn sos_multiple_constraints() {
+        let mut m = Model::new();
+        // Minimize x + 5y + z with -1 <= x <= 1 and -1 <= y <= 1 and -1 <= z <= 1
+        m.load_problem(
+            3,
+            0,
+            &vec![0, 0, 0, 0],
+            &vec![],
+            &vec![],
+            Some(&vec![-1., -1., -1.]),
+            Some(&vec![1., 1., 1.]),
+            Some(&vec![1., 5., 1.]),
+            None,
+            None,
+        );
+        // Add a constraint that either x or y must be 0
+        m.add_sos(
+            2, // add two constraints
+            &[
+                0, 2, // The first constraint is on columns col_indices[0..2]
+                4 // The second is on columns col_indices[2..4]
+            ],
+            &[
+                0, 1, // The first constraint is that either x or y must be 0
+                1, 2 // The second constraint is that either y or z must be 0
+            ],
+            &[
+                1., 5.,
+                5., 1.
+            ],
+            SOSConstraintType::Type1);
+        m.set_integer(0);
+        m.set_integer(1);
+        m.set_integer(2);
+
+        m.solve();
+        // The solution is x = -1 and y = 0
+        assert_eq!(&[0., -1., 0.], m.col_solution());
     }
 }
