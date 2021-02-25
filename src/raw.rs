@@ -60,6 +60,16 @@ pub enum SecondaryStatus {
     StoppedOnIterationLimit = 8,
 }
 
+/// The type of a special ordered set constraint
+#[repr(i32)]
+pub enum SOSConstraintType {
+    /// type 1: at most one element in the given set of columns can be non-zero
+    Type1 = 1,
+    /// type 2: at most two elements in the given set of columns can be non-zero.
+    /// If two elements are non-zero, then they have to be consecutive.
+    Type2 = 2,
+}
+
 /// A CBC MILP model.
 ///
 /// Their methods are a direct translation from the C API. For
@@ -238,7 +248,34 @@ impl Model {
         assert!(i < self.num_cols());
         unsafe { Cbc_setInteger(self.m, i.try_into().unwrap()) }
     }
-    // TODO: addSOS
+    /// Adds multiple SOS constraints
+    /// num_rows: the number of SOS constraints to add
+    /// row_starts: The indices at which each new constraint starts in the col_indices array,
+    /// plus one last element that indicates the size of col_indices array.
+    /// col_indices: The index of each variable to include in the constraints.
+    /// You create this array by concatenating the indices of the columns in each constraint.
+    pub fn add_sos(&self, row_starts: &[c_int], col_indices: &[c_int], weights: &[f64], sos_type: SOSConstraintType) {
+        let num_rows = row_starts.len().checked_sub(1).unwrap();
+        let last_idx: usize = row_starts[num_rows].try_into().unwrap();
+        assert_eq!(last_idx, col_indices.len());
+        for starts in row_starts.windows(2) {
+            assert!(starts[0] <= starts[1]);
+            let idx: usize = starts[0].try_into().unwrap();
+            assert!(idx < weights.len());
+            let col_idx: usize = col_indices[idx].try_into().unwrap();
+            assert!(col_idx <= self.num_cols());
+        }
+        unsafe {
+            Cbc_addSOS(
+                self.m,
+                num_rows.try_into().unwrap(),
+                row_starts.as_ptr(),
+                col_indices.as_ptr(),
+                weights.as_ptr(),
+                sos_type as c_int,
+            )
+        }
+    }
     pub fn print_model(&self, arg_prefix: &CStr) {
         unsafe { Cbc_printModel(self.m, arg_prefix.as_ptr()) }
     }
@@ -414,5 +451,70 @@ mod test {
         );
         m.set_initial_solution(&[]);
         assert_eq!(&value, &[0.])
+    }
+
+    #[test]
+    fn sos_one_constraint() {
+        let mut m = Model::new();
+        // Minimize 5x + 3y with -1 <= x <= 1 and -1 <= y <= 1
+        m.load_problem(
+            2,
+            0,
+            &vec![0, 0, 0],
+            &vec![],
+            &vec![],
+            Some(&vec![-1., -1.]),
+            Some(&vec![1., 1.]),
+            Some(&vec![5., 3.]),
+            None,
+            None,
+        );
+        // Add a constraint that either x or y must be 0
+        m.add_sos(&[0, 2], &[0, 1], &[5., 3.], SOSConstraintType::Type1);
+        m.set_integer(0);
+        m.set_integer(1);
+        m.solve();
+        // The solution is x = -1 and y = 0
+        assert_eq!(&[-1., 0.], m.col_solution());
+    }
+
+    #[test]
+    fn sos_multiple_constraints() {
+        let mut m = Model::new();
+        // Minimize x + 5y + z with -1 <= x <= 1 and -1 <= y <= 1 and -1 <= z <= 1
+        m.load_problem(
+            3,
+            0,
+            &vec![0, 0, 0, 0],
+            &vec![],
+            &vec![],
+            Some(&vec![-1., -1., -1.]),
+            Some(&vec![1., 1., 1.]),
+            Some(&vec![1., 5., 1.]),
+            None,
+            None,
+        );
+        // Add a constraint that either x or y must be 0
+        m.add_sos(
+            &[
+                0, 2, // The first constraint is on columns col_indices[0..2]
+                4 // The second is on columns col_indices[2..4]
+            ],
+            &[
+                0, 1, // The first constraint is that either x or y must be 0
+                1, 2 // The second constraint is that either y or z must be 0
+            ],
+            &[
+                1., 5.,
+                5., 1.
+            ],
+            SOSConstraintType::Type1);
+        m.set_integer(0);
+        m.set_integer(1);
+        m.set_integer(2);
+
+        m.solve();
+        // The solution is x = -1 and y = 0
+        assert_eq!(&[0., -1., 0.], m.col_solution());
     }
 }
