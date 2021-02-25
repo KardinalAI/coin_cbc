@@ -3,6 +3,9 @@
 //! This crate exposes safe and efficient bindings to the Coin CBC C
 //! API.
 //!
+//! For more information on how to install the `Cbc` library dependencies,
+//! see [the respective README section](https://github.com/KardinalAI/coin_cbc/README.md#prerequisites-installing-cbc-library-files).
+//!
 //! This project is distributed under the MIT License by
 //! [Kardinal](https://kardinal.ai).
 
