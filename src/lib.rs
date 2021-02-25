@@ -231,8 +231,7 @@ impl Model {
     /// Add a special ordered set constraint, preventing all but two adjacent variables
     /// in a set from being non-zero at the same time.
     /// Weights determine the adjacency of the variables. 
-   ///  For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm  
-    
+    ///  For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm 
     pub fn add_sos2<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
         self.sos2.add_constraint_with_weights(columns_and_weights.into_iter())
     }
