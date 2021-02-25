@@ -291,7 +291,6 @@ impl Solution {
 mod test {
     use super::*;
 
-    #[test]
     fn knapsack() {
         let mut m = Model::default();
         m.set_parameter("log", "0");
@@ -325,4 +324,15 @@ mod test {
         assert_eq!(1., sol.col(cols[3]));
         assert_eq!(1., sol.col(cols[4]));
     }
+
+    #[test]
+    fn knapsack_run_1() {
+        knapsack()
+    }
+
+    #[test]
+    fn knapsack_run_2() {
+        knapsack()
+    }
+
 }
