@@ -23,7 +23,7 @@ fn lock<T, F: FnOnce() -> T>(f: F) -> T {
 }
 
 #[cfg(not(feature = "singlethread-cbc"))]
-fn lock<T, F: FnMut() -> T>(mut f: F) -> T {
+fn lock<T, F: FnOnce() -> T>(f: F) -> T {
     f()
 }
 
