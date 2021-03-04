@@ -8,6 +8,17 @@
 //!
 //! This project is distributed under the MIT License by
 //! [Kardinal](https://kardinal.ai).
+//!
+//! ## Solving multiple problems in parallel
+//!
+//! By default, this crate enforces a global lock which will force multiple
+//! problems to be solved sequentially even if `solve` is called from multiple
+//! threads in parallel. This is because by default, libcbc is not thread safe.
+//! If you have compiled your own libcbc with the `CBC_THREAD_SAFE` option,
+//! you can disable this behavior by disabling the `singlethread-cbc`
+//! feature on this crate. Do not disable this feature if you are not certain
+//! that you have a thread safe libcbc, or you will be exposed to memory corruption
+//! vulnerabilities.
 
 #![deny(missing_docs)]
 
