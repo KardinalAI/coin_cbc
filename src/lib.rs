@@ -382,7 +382,7 @@ mod test {
 
     #[test]
     fn infeasible() {
-        // Solve many instances of the knapsack test above, in parallel
+        // Formulate an infeasible problem and try to solve it
         let mut m = Model::default();
         let x = m.add_col();
         m.set_obj_coeff(x, 1.);
