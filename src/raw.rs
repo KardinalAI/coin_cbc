@@ -14,7 +14,7 @@ use std::ffi::CStr;
 use std::os::raw::c_int;
 
 #[cfg(feature = "singlethread-cbc")]
-fn lock<T, F: FnMut() -> T>(mut f: F) -> T {
+fn lock<T, F: FnOnce() -> T>(f: F) -> T {
     lazy_static::lazy_static! {
         static ref GLOBAL_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
     }
