@@ -96,7 +96,7 @@ pub struct Model {
 impl Model {
     pub fn new() -> Self {
         Self {
-            m: unsafe { Cbc_newModel() },
+            m: lock(|| unsafe { Cbc_newModel() }),
         }
     }
     pub fn version() -> &'static str {
@@ -268,7 +268,13 @@ impl Model {
     /// plus one last element that indicates the size of col_indices array.
     /// col_indices: The index of each variable to include in the constraints.
     /// You create this array by concatenating the indices of the columns in each constraint.
-    pub fn add_sos(&self, row_starts: &[c_int], col_indices: &[c_int], weights: &[f64], sos_type: SOSConstraintType) {
+    pub fn add_sos(
+        &mut self,
+        row_starts: &[c_int],
+        col_indices: &[c_int],
+        weights: &[f64],
+        sos_type: SOSConstraintType,
+    ) {
         let num_rows = row_starts.len().checked_sub(1).unwrap();
         let last_idx: usize = row_starts[num_rows].try_into().unwrap();
         assert_eq!(last_idx, col_indices.len());
@@ -387,7 +393,7 @@ impl Model {
 
 impl Drop for Model {
     fn drop(&mut self) {
-        unsafe { Cbc_deleteModel(self.m) }
+        lock(|| unsafe { Cbc_deleteModel(self.m) })
     }
 }
 
@@ -400,7 +406,7 @@ impl Default for Model {
 impl Clone for Model {
     fn clone(&self) -> Self {
         Self {
-            m: unsafe { Cbc_clone(self.m) },
+            m: lock(|| unsafe { Cbc_clone(self.m) }),
         }
     }
 }
@@ -470,41 +476,49 @@ mod test {
     #[test]
     fn multiple_threads() {
         use std::thread::{spawn, JoinHandle};
-        let threads: Vec<JoinHandle<()>> = (0..50).map(|_|
-            spawn(|| {
-                for _ in 1..3 {
-                    // Solve an empty problem
-                    let mut m = Model::new();
-                    m.load_problem(1, 0, &[0, 0], &[], &[], None, None, None, None, None);
-                    m.solve();
-                    assert_eq!(Status::Unlaunched, m.status());
-                    assert_eq!(SecondaryStatus::Unlaunched, m.secondary_status());
-                    assert!((m.col_solution()[0]).abs() < 1e-6);
-                    // Solve a non-empty problem
-                    let mut m = Model::new();
-                    m.load_problem(
-                        5,
-                        1,
-                        &vec![0, 1, 2, 3, 4, 5],
-                        &vec![0, 0, 0, 0, 0],
-                        &vec![2., 8., 4., 2., 5.],
-                        Some(&vec![0., 0., 0., 0., 0.]),
-                        Some(&vec![1., 1., 1., 1., 1.]),
-                        Some(&vec![5., 3., 2., 7., 4.]),
-                        Some(&vec![-std::f64::INFINITY]),
-                        Some(&vec![10.]),
-                    );
-                    m.set_obj_sense(Sense::Maximize);
-                    for i in 0..5 {
-                        m.set_integer(i);
+        let threads: Vec<JoinHandle<()>> = (0..50)
+            .map(|_| {
+                spawn(|| {
+                    for _ in 1..3 {
+                        // Solve an empty problem
+                        let mut m = Model::new();
+                        m.load_problem(1, 0, &[0, 0], &[], &[], None, None, None, None, None);
+                        m.solve();
+                        if Model::version().starts_with("2.9.") {
+                            assert_eq!(Status::Finished, m.status());
+                            assert_eq!(SecondaryStatus::HasSolution, m.secondary_status());
+                        } else {
+                            assert_eq!(Status::Unlaunched, m.status());
+                            assert_eq!(SecondaryStatus::Unlaunched, m.secondary_status());
+                        }
+                        assert!((m.col_solution()[0]).abs() < 1e-6);
+                        // Solve a non-empty problem
+                        let mut m = Model::new();
+                        m.load_problem(
+                            5,
+                            1,
+                            &vec![0, 1, 2, 3, 4, 5],
+                            &vec![0, 0, 0, 0, 0],
+                            &vec![2., 8., 4., 2., 5.],
+                            Some(&vec![0., 0., 0., 0., 0.]),
+                            Some(&vec![1., 1., 1., 1., 1.]),
+                            Some(&vec![5., 3., 2., 7., 4.]),
+                            Some(&vec![-std::f64::INFINITY]),
+                            Some(&vec![10.]),
+                        );
+                        m.set_obj_sense(Sense::Maximize);
+                        for i in 0..5 {
+                            m.set_integer(i);
+                        }
+                        m.set_initial_solution(&vec![1., 1., 0., 0., 0.]);
+                        m.solve();
+                        assert_eq!(Status::Finished, m.status());
+                        assert_eq!(SecondaryStatus::HasSolution, m.secondary_status());
+                        assert!((m.col_solution()[0] - 1.).abs() < 1e-6);
                     }
-                    m.set_initial_solution(&vec![1., 1., 0., 0., 0.]);
-                    m.solve();
-                    assert_eq!(Status::Finished, m.status());
-                    assert_eq!(SecondaryStatus::HasSolution, m.secondary_status());
-                    assert!((m.col_solution()[0] - 1.).abs() < 1e-6);
-                }
-            })).collect();
+                })
+            })
+            .collect();
         for t in threads {
             t.join().expect("thread failed");
         }
@@ -555,17 +569,15 @@ mod test {
         m.add_sos(
             &[
                 0, 2, // The first constraint is on columns col_indices[0..2]
-                4 // The second is on columns col_indices[2..4]
+                4, // The second is on columns col_indices[2..4]
             ],
             &[
                 0, 1, // The first constraint is that either x or y must be 0
-                1, 2 // The second constraint is that either y or z must be 0
+                1, 2, // The second constraint is that either y or z must be 0
             ],
-            &[
-                1., 5.,
-                5., 1.
-            ],
-            SOSConstraintType::Type1);
+            &[1., 5., 5., 1.],
+            SOSConstraintType::Type1,
+        );
         m.set_integer(0);
         m.set_integer(1);
         m.set_integer(2);
