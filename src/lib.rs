@@ -27,11 +27,11 @@ mod sos_constraints;
 
 pub use raw::Sense;
 
+use crate::raw::SOSConstraintType;
+use crate::sos_constraints::SOSConstraints;
 use std::collections::BTreeMap;
 use std::ffi::CString;
 use std::os::raw::c_int;
-use crate::sos_constraints::SOSConstraints;
-use crate::raw::SOSConstraintType;
 
 /// A column identifier.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -232,22 +232,23 @@ impl Model {
         self.set_row_lower(row, value);
     }
 
-
     /// Add a special ordered set constraint, preventing all but one variable
     /// in a set from being non-zero at the same time.
     /// weights can be used as hints to the optimizer to improve the resolution speed.
-    /// In case you don't have any weights for your variables, you can use 1, 2, 3, ... 
+    /// In case you don't have any weights for your variables, you can use 1, 2, 3, ...
     /// For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm  
-    pub fn add_sos1<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
-        self.sos1.add_constraint_with_weights(columns_and_weights.into_iter())
+    pub fn add_sos1<I: IntoIterator<Item = (Col, f64)>>(&mut self, columns_and_weights: I) {
+        self.sos1
+            .add_constraint_with_weights(columns_and_weights.into_iter())
     }
 
     /// Add a special ordered set constraint, preventing all but two adjacent variables
     /// in a set from being non-zero at the same time.
-    /// Weights determine the adjacency of the variables. 
-    ///  For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm 
-    pub fn add_sos2<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
-        self.sos2.add_constraint_with_weights(columns_and_weights.into_iter())
+    /// Weights determine the adjacency of the variables.
+    ///  For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm
+    pub fn add_sos2<I: IntoIterator<Item = (Col, f64)>>(&mut self, columns_and_weights: I) {
+        self.sos2
+            .add_constraint_with_weights(columns_and_weights.into_iter())
     }
 
     /// Sets the objective sense.
@@ -368,12 +369,15 @@ mod test {
         assert_eq!(1., sol.col(cols[4]));
     }
 
-
     #[test]
     fn parallel_solves() {
         // Solve many instances of the knapsack test above, in parallel
-        let knapsacks = (0..50).map(|_| std::thread::spawn(knapsack)).collect::<Vec<_>>();
-        let sos = (0..50).map(|_| std::thread::spawn(with_sos)).collect::<Vec<_>>();
+        let knapsacks = (0..50)
+            .map(|_| std::thread::spawn(knapsack))
+            .collect::<Vec<_>>();
+        let sos = (0..50)
+            .map(|_| std::thread::spawn(with_sos))
+            .collect::<Vec<_>>();
         for t in knapsacks.into_iter().chain(sos) {
             t.join().unwrap();
         }
@@ -402,10 +406,7 @@ mod test {
         let mut m = Model::default();
         let row = m.add_row();
         m.set_row_upper(row, 10.);
-        let cols = vec![
-            m.add_binary(),
-            m.add_binary(),
-        ];
+        let cols = vec![m.add_binary(), m.add_binary()];
         // Maximise 5 x + 3 y
         m.set_obj_coeff(cols[0], 5.);
         m.set_obj_coeff(cols[1], 3.);
