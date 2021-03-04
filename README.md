@@ -7,7 +7,7 @@ For more details on installing the `libCbc` dependencies, [see below](#prerequis
 
 ## ⚠️ Important warning
 
-By default, the cbc library is not thread safe, and this crate does not prevent manipulating multiple models in parallel.
+By default, the [cbc library currently is not thread safe](https://github.com/coin-or/Cbc/issues/332#issuecomment-788536741), and this crate does not prevent manipulating multiple models in parallel.
 This means that by default, this crate **violates rust memory safety rules**.
 This will expose you to potentially exploitable memory corruption issues.
 In particular:
