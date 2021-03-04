@@ -470,9 +470,17 @@ mod test {
     #[test]
     fn multiple_threads() {
         use std::thread::{spawn, JoinHandle};
-        let threads: Vec<JoinHandle<()>> = (0..10).map(|_|
+        let threads: Vec<JoinHandle<()>> = (0..50).map(|_|
             spawn(|| {
                 for _ in 1..3 {
+                    // Solve an empty problem
+                    let mut m = Model::new();
+                    m.load_problem(1, 0, &[0, 0], &[], &[], None, None, None, None, None);
+                    m.solve();
+                    assert_eq!(Status::Unlaunched, m.status());
+                    assert_eq!(SecondaryStatus::Unlaunched, m.secondary_status());
+                    assert!((m.col_solution()[0]).abs() < 1e-6);
+                    // Solve a non-empty problem
                     let mut m = Model::new();
                     m.load_problem(
                         5,
@@ -493,7 +501,7 @@ mod test {
                     m.set_initial_solution(&vec![1., 1., 0., 0., 0.]);
                     m.solve();
                     assert_eq!(Status::Finished, m.status());
-                    assert!(m.is_proven_optimal());
+                    assert_eq!(SecondaryStatus::HasSolution, m.secondary_status());
                     assert!((m.col_solution()[0] - 1.).abs() < 1e-6);
                 }
             })).collect();
