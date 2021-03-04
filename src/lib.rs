@@ -331,6 +331,7 @@ impl Solution {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::raw::{SecondaryStatus, Status};
 
     #[test]
     fn knapsack() {
@@ -377,6 +378,24 @@ mod test {
             t1.join().unwrap();
             t2.join().unwrap();
         }
+    }
+
+    #[test]
+    fn infeasible() {
+        // Solve many instances of the knapsack test above, in parallel
+        let mut m = Model::default();
+        let x = m.add_col();
+        m.set_obj_coeff(x, 1.);
+        m.set_col_upper(x, 9.); // x <= 9
+        let constraint = m.add_row();
+        m.set_weight(constraint, x, 1.);
+        m.set_row_lower(constraint, 10.); // x >= 10
+        m.set_obj_sense(Sense::Maximize);
+        m.solve();
+        // The problem is infeasible
+        assert_eq!(Status::Unlaunched, m.to_raw().status());
+        assert_eq!(SecondaryStatus::Unlaunched, m.to_raw().secondary_status());
+        assert!(!m.to_raw().is_proven_optimal());
     }
 
     #[test]
