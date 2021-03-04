@@ -13,6 +13,22 @@ use std::convert::TryInto;
 use std::ffi::CStr;
 use std::os::raw::c_int;
 
+#[cfg(feature = "singlethread-cbc")]
+fn lock<T, F: FnMut() -> T>(mut f: F) -> T {
+    lazy_static::lazy_static! {
+        static ref GLOBAL_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    }
+    let lock = GLOBAL_MUTEX.lock().unwrap();
+    let result = f();
+    drop(lock);
+    result
+}
+
+#[cfg(not(feature = "singlethread-cbc"))]
+fn lock<T, F: FnMut() -> T>(mut f: F) -> T {
+    f()
+}
+
 /// Sense of optimization.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Sense {
@@ -284,7 +300,7 @@ impl Model {
     }
     // TODO: callback
     pub fn solve(&mut self) -> c_int {
-        unsafe { Cbc_solve(self.m) }
+        lock(|| unsafe { Cbc_solve(self.m) })
     }
     pub fn sum_primal_infeasibilities(&self) -> f64 {
         unsafe { Cbc_sumPrimalInfeasibilities(self.m) }
@@ -443,7 +459,7 @@ mod test {
     fn big_row() {
         let mut m = Model::new();
         let numcols = 0;
-        let numrows = 1_000_000;
+        let numrows = 1_000;
         let start = [1];
         let value = [0.];
         m.load_problem(
@@ -451,6 +467,41 @@ mod test {
         );
         m.set_initial_solution(&[]);
         assert_eq!(&value, &[0.])
+    }
+
+    #[test]
+    fn multiple_threads() {
+        use std::thread::{spawn, JoinHandle};
+        let threads: Vec<JoinHandle<()>> = (0..10).map(|_|
+            spawn(|| {
+                for _ in 1..3 {
+                    let mut m = Model::new();
+                    m.load_problem(
+                        5,
+                        1,
+                        &vec![0, 1, 2, 3, 4, 5],
+                        &vec![0, 0, 0, 0, 0],
+                        &vec![2., 8., 4., 2., 5.],
+                        Some(&vec![0., 0., 0., 0., 0.]),
+                        Some(&vec![1., 1., 1., 1., 1.]),
+                        Some(&vec![5., 3., 2., 7., 4.]),
+                        Some(&vec![-std::f64::INFINITY]),
+                        Some(&vec![10.]),
+                    );
+                    m.set_obj_sense(Sense::Maximize);
+                    for i in 0..5 {
+                        m.set_integer(i);
+                    }
+                    m.set_initial_solution(&vec![1., 1., 0., 0., 0.]);
+                    m.solve();
+                    assert_eq!(Status::Finished, m.status());
+                    assert!(m.is_proven_optimal());
+                    assert!((m.col_solution()[0] - 1.).abs() < 1e-6);
+                }
+            })).collect();
+        for t in threads {
+            t.join().expect("thread failed");
+        }
     }
 
     #[test]

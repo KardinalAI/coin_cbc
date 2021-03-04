@@ -14,5 +14,13 @@ readme = "README.md"
 [workspace]
 members = ["coin_cbc_sys"]
 
+[features]
+default = ["singlethread-cbc"]
+# The `singlethread-cbc` feature MUST be activated if this crate is going to be used with
+# a cbc dynamic library that has not been explicitly compiled with `-DCBC_THRED_SAFE`.
+# For more information, see https://github.com/KardinalAI/coin_cbc/issues/9
+singlethread-cbc = ["lazy_static"]
+
 [dependencies]
 coin_cbc_sys = { version = "0.1", path = "coin_cbc_sys" }
+lazy_static = { version = "1.4", optional = true }
