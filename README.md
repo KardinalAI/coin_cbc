@@ -8,7 +8,8 @@ For more details on installing the `libCbc` dependencies, [see below](#prerequis
 ## ⚠️ Important warning
 
 By default, the [cbc library currently is not thread safe](https://github.com/coin-or/Cbc/issues/332#issuecomment-788536741), and this crate does not prevent manipulating multiple models in parallel.
-This means that by default, this crate **violates rust memory safety rules**.
+You [should obtain a thread-safe version of `cbc`](https://github.com/KardinalAI/coin_cbc/pull/7#issuecomment-786189288).
+Otherwise, until this is permanently fixed in `cbc`, this crate by default **violates rust memory safety rules**.
 This will expose you to potentially exploitable memory corruption issues.
 In particular:
  - If you are using this library inside a web server, you may be exposing yourself to remote code execution.
