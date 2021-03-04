@@ -398,6 +398,17 @@ mod test {
     }
 
     #[test]
+    fn unbounded() {
+        // Formulate an unbounded problem and try to solve it
+        let mut m = Model::default();
+        let z = m.add_col();
+        m.set_obj_coeff(z, 1.);
+        m.set_col_lower(z, -1e100);
+        m.set_obj_sense(Sense::Minimize);
+        m.solve();
+    }
+
+    #[test]
     fn with_sos() {
         let mut m = Model::default();
         let row = m.add_row();
