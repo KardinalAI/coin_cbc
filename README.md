@@ -5,6 +5,17 @@ Rust bindings to the CoinOR CBC MILP Solver using the C API.
 Tested on Debian 10, AMD64, coinor-libcbc3 2.9.9+repack1-1.
 For more details on installing the `libCbc` dependencies, [see below](#prerequisites-installing-cbc-library-files).
 
+## ⚠️ Important warning
+
+By default, the cbc library is not thread safe, and this crate does not prevent manipulating multiple models in parallel.
+This means that by default, this crate **violates rust memory safety rules**.
+This will expose you to potentially exploitable memory corruption issues.
+In particular:
+ - If you are using this library inside a web server, you may be exposing yourself to remote code execution.
+ - By default, cargo runs tests in parallel. If you are using this library in your tests, you are exposing yourself to non-deterministic test failures.
+
+For more information and potential workarounds see [issue 9](https://github.com/KardinalAI/coin_cbc/issues/9).
+
 ## `coin_cbc_sys`
 
 This crate exposes raw bindings to the C functions.
