@@ -3,6 +3,9 @@
 //! This crate exposes safe and efficient bindings to the Coin CBC C
 //! API.
 //!
+//! For more information on how to install the `Cbc` library dependencies,
+//! see [the respective README section](https://github.com/KardinalAI/coin_cbc/README.md#prerequisites-installing-cbc-library-files).
+//!
 //! This project is distributed under the MIT License by
 //! [Kardinal](https://kardinal.ai).
 
@@ -221,12 +224,17 @@ impl Model {
 
     /// Add a special ordered set constraint, preventing all but one variable
     /// in a set from being non-zero at the same time.
+    /// weights can be used as hints to the optimizer to improve the resolution speed.
+    /// In case you don't have any weights for your variables, you can use 1, 2, 3, ... 
+    /// For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm  
     pub fn add_sos1<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
         self.sos1.add_constraint_with_weights(columns_and_weights.into_iter())
     }
 
-    /// Add a special ordered set constraint, preventing all but two consecutive variables
+    /// Add a special ordered set constraint, preventing all but two adjacent variables
     /// in a set from being non-zero at the same time.
+    /// Weights determine the adjacency of the variables. 
+    ///  For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm 
     pub fn add_sos2<I: IntoIterator<Item=(Col, f64)>>(&mut self, columns_and_weights: I) {
         self.sos2.add_constraint_with_weights(columns_and_weights.into_iter())
     }
