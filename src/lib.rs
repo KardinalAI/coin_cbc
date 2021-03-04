@@ -374,9 +374,8 @@ mod test {
         // Solve many instances of the knapsack test above, in parallel
         let knapsacks = (0..50).map(|_| std::thread::spawn(knapsack)).collect::<Vec<_>>();
         let sos = (0..50).map(|_| std::thread::spawn(with_sos)).collect::<Vec<_>>();
-        for (t1, t2) in knapsacks.into_iter().zip(sos) {
-            t1.join().unwrap();
-            t2.join().unwrap();
+        for t in knapsacks.into_iter().chain(sos) {
+            t.join().unwrap();
         }
     }
 
