@@ -8,6 +8,17 @@
 //!
 //! This project is distributed under the MIT License by
 //! [Kardinal](https://kardinal.ai).
+//!
+//! ## Solving multiple problems in parallel
+//!
+//! By default, this crate enforces a global lock which will force multiple
+//! problems to be solved sequentially even if `solve` is called from multiple
+//! threads in parallel. This is because by default, libcbc is not thread safe.
+//! If you have compiled your own libcbc with the `CBC_THREAD_SAFE` option,
+//! you can disable this behavior by disabling the `singlethread-cbc`
+//! feature on this crate. Do not disable this feature if you are not certain
+//! that you have a thread safe libcbc, or you will be exposed to memory corruption
+//! vulnerabilities.
 
 #![deny(missing_docs)]
 
@@ -320,6 +331,7 @@ impl Solution {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::raw::{SecondaryStatus, Status};
 
     #[test]
     fn knapsack() {
@@ -354,6 +366,35 @@ mod test {
         assert_eq!(0., sol.col(cols[2]));
         assert_eq!(1., sol.col(cols[3]));
         assert_eq!(1., sol.col(cols[4]));
+    }
+
+
+    #[test]
+    fn parallel_solves() {
+        // Solve many instances of the knapsack test above, in parallel
+        let knapsacks = (0..50).map(|_| std::thread::spawn(knapsack)).collect::<Vec<_>>();
+        let sos = (0..50).map(|_| std::thread::spawn(with_sos)).collect::<Vec<_>>();
+        for t in knapsacks.into_iter().chain(sos) {
+            t.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn infeasible() {
+        // Formulate an infeasible problem and try to solve it
+        let mut m = Model::default();
+        let x = m.add_col();
+        m.set_obj_coeff(x, 1.);
+        m.set_col_upper(x, 9.); // x <= 9
+        let constraint = m.add_row();
+        m.set_weight(constraint, x, 1.);
+        m.set_row_lower(constraint, 10.); // x >= 10
+        m.set_obj_sense(Sense::Maximize);
+        m.solve();
+        // The problem is infeasible
+        assert_eq!(Status::Unlaunched, m.to_raw().status());
+        assert_eq!(SecondaryStatus::Unlaunched, m.to_raw().secondary_status());
+        assert!(!m.to_raw().is_proven_optimal());
     }
 
     #[test]
