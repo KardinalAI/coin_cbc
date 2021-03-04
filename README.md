@@ -15,7 +15,7 @@ In particular:
  - If you are using this library inside a web server, you may be exposing yourself to remote code execution.
  - By default, cargo runs tests in parallel. If you are using this library in your tests, you are exposing yourself to non-deterministic test failures.
 
-For more information and potential workarounds see [issue 9](https://github.com/KardinalAI/coin_cbc/issues/9).
+For more information and potential workarounds see [issue 9](https://github.com/KardinalAI/coin_cbc/issues/9) and [PR 7](https://github.com/KardinalAI/coin_cbc/pull/7).
 
 ## `coin_cbc_sys`
 
