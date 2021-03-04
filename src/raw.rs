@@ -18,10 +18,8 @@ fn lock<T, F: FnMut() -> T>(mut f: F) -> T {
     lazy_static::lazy_static! {
         static ref GLOBAL_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
     }
-    let lock = GLOBAL_MUTEX.lock().unwrap();
-    let result = f();
-    drop(lock);
-    result
+    let _lock = GLOBAL_MUTEX.lock().unwrap();
+    f()
 }
 
 #[cfg(not(feature = "singlethread-cbc"))]
