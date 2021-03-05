@@ -348,11 +348,23 @@ impl Model {
     pub fn is_initial_solve_proven_primal_infeasible(&self) -> bool {
         unsafe { Cbc_isInitialSolveProvenPrimalInfeasible(self.m) != 0 }
     }
+    /// Primal row solution
     pub fn row_activity(&self) -> &[f64] {
         unsafe { std::slice::from_raw_parts(Cbc_getRowActivity(self.m), self.num_rows()) }
     }
+    /// Primal column solution
     pub fn col_solution(&self) -> &[f64] {
         unsafe { std::slice::from_raw_parts(Cbc_getColSolution(self.m), self.num_cols()) }
+    }
+    /* Disabled until available in the C API
+    /// Dual row solution
+    pub fn row_price(&self) -> &[f64] {
+        unsafe { std::slice::from_raw_parts(Cbc_getRowPrice(self.m), self.num_rows()) }
+    }
+     */
+    /// Dual column solution
+    pub fn reduced_cost(&self) -> &[f64] {
+        unsafe { std::slice::from_raw_parts(Cbc_getReducedCost(self.m), self.num_cols()) }
     }
     pub fn obj_value(&self) -> f64 {
         unsafe { Cbc_getObjValue(self.m) }

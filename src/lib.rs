@@ -327,6 +327,30 @@ impl Solution {
     pub fn col(&self, col: Col) -> f64 {
         self.raw.col_solution()[col.as_usize()]
     }
+    ///Returns whether the given variable is basic (equal to zero in the solution)
+    pub fn is_basic(&self, col: Col) -> bool {
+        self.col(col) == 0.
+    }
+    /// Primal row solution : gets the value of the linear expression in the given constraint
+    pub fn row_activity(&self, row: Row) -> f64 {
+        self.raw.row_activity()[row.as_usize()]
+    }
+
+    /* Disabled until getRowPrice is available in the C API
+    /// Dual column solution, or "shadow price":
+    /// the amount by which the optimal objective value is improved
+    /// if the right-hand side of the given constraint is increased by 1.
+    pub fn row_price(&self, row: Row) -> f64 {
+        self.raw.row_price()[row.as_usize()]
+    }
+    */
+
+    /// For a minimization problem, the reduced cost of a nonbasic variable
+    /// (a variable that is null in the solution) is the amount by which the value of
+    /// the objective will decrease if we increase the value of the variable by 1
+    pub fn reduced_cost(&self, col: Col) -> f64 {
+        self.raw.reduced_cost()[col.as_usize()]
+    }
 }
 
 #[cfg(test)]
@@ -399,6 +423,40 @@ mod test {
         assert_eq!(Status::Unlaunched, m.to_raw().status());
         assert_eq!(SecondaryStatus::Unlaunched, m.to_raw().secondary_status());
         assert!(!m.to_raw().is_proven_optimal());
+    }
+
+    #[test]
+    fn simple() {
+        // Formulate an infeasible problem and try to solve it
+        let mut m = Model::default();
+        let x = m.add_col();
+        let y = m.add_col();
+
+        // Maximise x + y
+        m.set_obj_coeff(x, 1.);
+        m.set_obj_coeff(y, 1.);
+        m.set_obj_sense(Sense::Maximize);
+
+        // c1: 2x + 3y <= 8
+        let c1 = m.add_row();
+        m.set_weight(c1, x, 2.);
+        m.set_weight(c1, y, 3.);
+        m.set_row_upper(c1, 8.);
+
+        let solution = m.solve();
+
+        assert_eq!(solution.col(x), 4.);
+        assert_eq!(solution.col(y), 0.);
+
+        // In the solution, 2x + 3y == 8
+        assert_eq!(solution.row_activity(c1), 8.);
+
+        // If we set y to 1, we will have x = 5/2 and objective = 3.5 instead of 4
+        assert_eq!(solution.reduced_cost(x), 0.);
+        assert_eq!(solution.reduced_cost(y), -0.5);
+
+        // If 2x + 3y == 9, we will have x=9/2 and the objective value will be 4.5 instead of 4
+        //assert_eq!(solution.row_price(c1), 0.5);
     }
 
     #[test]
