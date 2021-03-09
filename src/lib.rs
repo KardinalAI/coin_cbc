@@ -1,3 +1,4 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //! Coin CBC Rust bindings
 //!
 //! This crate exposes safe and efficient bindings to the Coin CBC C
@@ -236,7 +237,7 @@ impl Model {
     /// in a set from being non-zero at the same time.
     /// weights can be used as hints to the optimizer to improve the resolution speed.
     /// In case you don't have any weights for your variables, you can use 1, 2, 3, ...
-    /// For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm  
+    /// For more information about SOS weights, see: <http://lpsolve.sourceforge.net/5.5/SOS.htm>
     pub fn add_sos1<I: IntoIterator<Item = (Col, f64)>>(&mut self, columns_and_weights: I) {
         self.sos1
             .add_constraint_with_weights(columns_and_weights.into_iter())
@@ -245,7 +246,7 @@ impl Model {
     /// Add a special ordered set constraint, preventing all but two adjacent variables
     /// in a set from being non-zero at the same time.
     /// Weights determine the adjacency of the variables.
-    ///  For more information about SOS weights, see: http://lpsolve.sourceforge.net/5.5/SOS.htm
+    ///  For more information about SOS weights, see: <http://lpsolve.sourceforge.net/5.5/SOS.htm>
     pub fn add_sos2<I: IntoIterator<Item = (Col, f64)>>(&mut self, columns_and_weights: I) {
         self.sos2
             .add_constraint_with_weights(columns_and_weights.into_iter())
@@ -323,14 +324,19 @@ impl Solution {
     pub fn into_raw(self) -> raw::Model {
         self.raw
     }
+
     /// Gets the value of the given column in the solution.
     pub fn col(&self, col: Col) -> f64 {
         self.raw.col_solution()[col.as_usize()]
     }
+
     ///Returns whether the given variable is basic (equal to zero in the solution)
     pub fn is_basic(&self, col: Col) -> bool {
         self.col(col) == 0.
     }
+
+    #[cfg(feature = "cbc-310")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "cbc-310")))]
     /// Primal row solution : gets the value of the linear expression in the given constraint
     pub fn row_activity(&self, row: Row) -> f64 {
         self.raw.row_activity()[row.as_usize()]
@@ -345,12 +351,37 @@ impl Solution {
     }
     */
 
+    #[cfg(feature = "cbc-310")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "cbc-310")))]
     /// For a minimization problem, the reduced cost of a nonbasic variable
     /// (a variable that is null in the solution) is the amount by which the value of
     /// the objective will decrease if we increase the value of the variable by 1
     pub fn reduced_cost(&self, col: Col) -> f64 {
         self.raw.reduced_cost()[col.as_usize()]
     }
+}
+
+/// Returns a tuple of (major, minor, patch) version of the libcbc installed on the current system
+pub fn libcbc_version() -> (u32, u32, u32) {
+    let mut iter = raw::Model::version().split('.').map(|s| s.parse().unwrap_or_default());
+    (
+        iter.next().unwrap_or_default(),
+        iter.next().unwrap_or_default(),
+        iter.next().unwrap_or_default(),
+    )
+}
+
+/// Returns an error if the installed version of libcbc is less than a given version
+pub fn test_min_libcbc_version(major: u32, minor: u32) -> Result<(), String> {
+    match libcbc_version() {
+        actual if actual.0 == major && actual.1 >= minor => Ok(()),
+        _ => Err(format!("Expected at least version {}.{}, got version {}", major, minor, raw::Model::version()))
+    }
+}
+
+/// Panics if the installed version of libcbc is less than a given version
+pub fn assert_min_libcbc_version(major: u32, minor: u32) {
+    test_min_libcbc_version(major, minor).expect("The installed version of libcbc is too old.")
 }
 
 #[cfg(test)]
@@ -425,6 +456,7 @@ mod test {
         assert!(!m.to_raw().is_proven_optimal());
     }
 
+    #[cfg(feature = "cbc-310")]
     #[test]
     fn simple() {
         // Formulate an infeasible problem and try to solve it

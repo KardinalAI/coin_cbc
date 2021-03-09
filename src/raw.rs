@@ -348,10 +348,15 @@ impl Model {
     pub fn is_initial_solve_proven_primal_infeasible(&self) -> bool {
         unsafe { Cbc_isInitialSolveProvenPrimalInfeasible(self.m) != 0 }
     }
+
+    #[cfg(feature = "cbc-310")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "cbc-310")))]
     /// Primal row solution
+    /// This function is not available on libcbc < 3.10
     pub fn row_activity(&self) -> &[f64] {
         unsafe { std::slice::from_raw_parts(Cbc_getRowActivity(self.m), self.num_rows()) }
     }
+
     /// Primal column solution
     pub fn col_solution(&self) -> &[f64] {
         unsafe { std::slice::from_raw_parts(Cbc_getColSolution(self.m), self.num_cols()) }
@@ -362,7 +367,11 @@ impl Model {
         unsafe { std::slice::from_raw_parts(Cbc_getRowPrice(self.m), self.num_rows()) }
     }
      */
-    /// Dual column solution
+
+    #[cfg(feature = "cbc-310")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "cbc-310")))]
+    /// Dual column solution.
+    /// This function is not available on libcbc < 3.10.
     pub fn reduced_cost(&self) -> &[f64] {
         unsafe { std::slice::from_raw_parts(Cbc_getReducedCost(self.m), self.num_cols()) }
     }

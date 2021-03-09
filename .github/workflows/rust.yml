@@ -10,9 +10,9 @@ jobs:
   build:
     strategy:
       matrix:
-        os:
-        - ubuntu-latest
-        - ubuntu-18.04
+        include:
+          - {os: ubuntu-latest, flags: "--all-features" }
+          - {os: ubuntu-18.04, flags: "" }
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -22,4 +22,4 @@ jobs:
     - name: Build
       run: cargo build --verbose --all
     - name: Run tests
-      run: cargo test --verbose --all
+      run: cargo test --verbose --all ${{ matrix.flags }}
