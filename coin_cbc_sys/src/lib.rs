@@ -104,8 +104,16 @@ extern "C" {
     pub fn Cbc_isInitialSolveAbandoned(model: *mut Cbc_Model) -> c_int;
     pub fn Cbc_isInitialSolveProvenOptimal(model: *mut Cbc_Model) -> c_int;
     pub fn Cbc_isInitialSolveProvenPrimalInfeasible(model: *mut Cbc_Model) -> c_int;
+    /// Primal row solution
     pub fn Cbc_getRowActivity(model: *mut Cbc_Model) -> *const f64;
+    /// Primal column solution
     pub fn Cbc_getColSolution(model: *mut Cbc_Model) -> *const f64;
+    /* Disabled until available in the C API: https://github.com/coin-or/Cbc/issues/370
+    /// Dual row solution
+    pub fn Cbc_getRowPrice(model: *mut Cbc_Model) -> *const f64;
+     */
+    /// Dual column solution
+    pub fn Cbc_getReducedCost(model: *mut Cbc_Model) -> *const f64;
     pub fn Cbc_getObjValue(model: *mut Cbc_Model) -> f64;
     pub fn Cbc_getBestPossibleObjValue(model: *mut Cbc_Model) -> f64;
     pub fn Cbc_getNodeCount(model: *mut Cbc_Model) -> c_int;
