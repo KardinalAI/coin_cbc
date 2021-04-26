@@ -1,6 +1,6 @@
 [package]
 name = "coin_cbc"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Kardinal <guillaume.pinot@kardinal.ai>"]
 edition = "2018"
 description = "Rust bindings to the CoinOR CBC MILP Solveur using the C API."
@@ -22,5 +22,5 @@ default = ["singlethread-cbc"]
 singlethread-cbc = ["lazy_static"]
 
 [dependencies]
-coin_cbc_sys = { version = "0.1", path = "coin_cbc_sys" }
+coin_cbc_sys = { version = "0.1.1", path = "coin_cbc_sys" }
 lazy_static = { version = "1.4", optional = true }
