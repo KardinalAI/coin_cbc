@@ -304,7 +304,8 @@ impl Model {
     pub fn solve(&self) -> Solution {
         let mut raw = self.to_raw();
         raw.solve();
-        Solution { raw }
+        let col_solution = raw.col_solution().into();
+        Solution { raw, col_solution }
     }
 }
 
@@ -314,6 +315,8 @@ impl Model {
 /// the typed identifiers.
 pub struct Solution {
     raw: raw::Model,
+    /// Cached column results to avoid creating a new slice on every access.
+    col_solution: Box<[f64]>,
 }
 impl Solution {
     /// Gets a shared reference to the internal `raw::Model`.
@@ -327,7 +330,7 @@ impl Solution {
 
     /// Gets the value of the given column in the solution.
     pub fn col(&self, col: Col) -> f64 {
-        self.raw.col_solution()[col.as_usize()]
+        self.col_solution[col.as_usize()]
     }
 
     ///Returns whether the given variable is basic (equal to zero in the solution)
@@ -363,7 +366,9 @@ impl Solution {
 
 /// Returns a tuple of (major, minor, patch) version of the libcbc installed on the current system
 pub fn libcbc_version() -> (u32, u32, u32) {
-    let mut iter = raw::Model::version().split('.').map(|s| s.parse().unwrap_or_default());
+    let mut iter = raw::Model::version()
+        .split('.')
+        .map(|s| s.parse().unwrap_or_default());
     (
         iter.next().unwrap_or_default(),
         iter.next().unwrap_or_default(),
@@ -375,7 +380,12 @@ pub fn libcbc_version() -> (u32, u32, u32) {
 pub fn test_min_libcbc_version(major: u32, minor: u32) -> Result<(), String> {
     match libcbc_version() {
         actual if actual.0 == major && actual.1 >= minor => Ok(()),
-        _ => Err(format!("Expected at least version {}.{}, got version {}", major, minor, raw::Model::version()))
+        _ => Err(format!(
+            "Expected at least version {}.{}, got version {}",
+            major,
+            minor,
+            raw::Model::version()
+        )),
     }
 }
 
