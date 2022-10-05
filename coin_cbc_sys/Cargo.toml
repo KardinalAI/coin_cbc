@@ -9,3 +9,6 @@ repository = "https://github.com/KardinalAI/coin_cbc"
 keywords = ["MILP", "MIP", "linear-programming"]
 categories = ["external-ffi-bindings", "mathematics", "science"]
 license = "MIT "
+
+[build-dependencies]
+pkg-config = "0.3"

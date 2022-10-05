@@ -27,6 +27,8 @@ On a Debian system with a user with admin rights, this is easily achieved with:
 sudo apt install coinor-libcbc-dev
 ```
 
+If you have `pkg-config` available, it'll be used to locate the library.
+
 For other systems, without admin rights or if you need a newer version of `Cbc` (e.g. with bug fixes), you can install `Cbc` through `coinbrew`:
 https://coin-or.github.io/user_introduction#building-from-source
 
