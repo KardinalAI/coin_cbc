@@ -1,6 +1,6 @@
 [package]
 name = "coin_cbc"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["Kardinal <guillaume.pinot@kardinal.ai>"]
 edition = "2018"
 description = "Rust bindings to the CoinOR CBC MILP Solveur using the C API."
