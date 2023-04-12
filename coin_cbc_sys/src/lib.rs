@@ -22,11 +22,7 @@ pub type cbc_callback = Option<
     ),
 >;
 
-#[cfg_attr(
-    target_family = "windows",
-    link(name = "libCbcSolver", kind = "static")
-)]
-#[cfg_attr(not(target_family = "windows"), link(name = "CbcSolver"))]
+#[link(name = "CbcSolver")]
 extern "C" {
     pub fn Cbc_newModel() -> *mut Cbc_Model;
     pub fn Cbc_deleteModel(model: *mut Cbc_Model);
