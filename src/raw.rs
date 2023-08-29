@@ -45,7 +45,7 @@ impl Default for Sense {
 }
 
 /// Status of the model.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Status {
     /// The solving procedure was not launched.
     Unlaunched = -1,
@@ -60,7 +60,7 @@ pub enum Status {
 }
 
 #[allow(missing_docs)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum SecondaryStatus {
     Unlaunched = -1,
     HasSolution = 0,
