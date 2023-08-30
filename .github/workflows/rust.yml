@@ -12,7 +12,7 @@ jobs:
       matrix:
         include:
           - {os: ubuntu-latest, flags: "--all-features" }
-          - {os: ubuntu-18.04, flags: "" }
+          - {os: ubuntu-22.04, flags: "" }
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -20,6 +20,6 @@ jobs:
     - name: Prepare dependencies
       run: sudo apt-get install coinor-libcbc-dev
     - name: Build
-      run: cargo build --verbose --all
+      run: cargo build --verbose --all ${{ matrix.flags }}
     - name: Run tests
       run: cargo test --verbose --all ${{ matrix.flags }}
