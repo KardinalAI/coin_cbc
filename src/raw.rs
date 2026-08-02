@@ -302,6 +302,9 @@ impl Model {
     pub fn set_parameter(&mut self, name: &CStr, value: &CStr) {
         unsafe { Cbc_setParameter(self.m, name.as_ptr(), value.as_ptr()) };
     }
+    pub fn set_log_level(&mut self, log_level: c_int) {
+        unsafe { Cbc_setLogLevel(self.m, log_level) };
+    }
     // TODO: callback
     pub fn solve(&mut self) -> c_int {
         lock(|| unsafe { Cbc_solve(self.m) })

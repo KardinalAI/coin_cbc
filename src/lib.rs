@@ -70,6 +70,7 @@ pub struct Model {
     parameters: BTreeMap<CString, CString>,
     sos1: SOSConstraints,
     sos2: SOSConstraints,
+    log_level: Option<c_int>,
 }
 
 impl Model {
@@ -119,6 +120,12 @@ impl Model {
             Err(_) => return,
         };
         self.parameters.insert(key, value);
+    }
+    /// Sets the log level used by CBC and its underlying LP solver.
+    ///
+    /// A level of `0` suppresses normal solver output.
+    pub fn set_log_level(&mut self, log_level: c_int) {
+        self.log_level = Some(log_level);
     }
     /// Sets parameters for an iterator.
     pub fn set_parameters(
@@ -293,6 +300,9 @@ impl Model {
         for (k, v) in &self.parameters {
             raw.set_parameter(k, v);
         }
+        if let Some(log_level) = self.log_level {
+            raw.set_log_level(log_level);
+        }
         if let Some(sol) = &self.initial_solution {
             raw.set_initial_solution(sol);
         }
@@ -402,7 +412,7 @@ mod test {
     #[test]
     fn knapsack() {
         let mut m = Model::default();
-        m.set_parameter("log", "0");
+        m.set_log_level(0);
         let row = m.add_row();
         m.set_row_upper(row, 10.);
         let cols = vec![

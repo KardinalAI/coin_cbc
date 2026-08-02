@@ -87,6 +87,7 @@ extern "C" {
     pub fn Cbc_printModel(model: *mut Cbc_Model, argPrefix: *const c_char);
     pub fn Cbc_clone(model: *mut Cbc_Model) -> *mut Cbc_Model;
     pub fn Cbc_setParameter(model: *mut Cbc_Model, name: *const c_char, value: *const c_char);
+    pub fn Cbc_setLogLevel(model: *mut Cbc_Model, logLevel: c_int);
     pub fn Cbc_registerCallBack(model: *mut Cbc_Model, userCallBack: cbc_callback);
     pub fn Cbc_clearCallBack(model: *mut Cbc_Model);
     pub fn Cbc_solve(model: *mut Cbc_Model) -> c_int;
